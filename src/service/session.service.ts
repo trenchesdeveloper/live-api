@@ -1,46 +1,33 @@
-import logger from "../utils/logger";
-import config from "config";
-import { SessionDocument } from "./../models/session.model";
-import { FilterQuery, UpdateQuery } from "mongoose";
-import SessionModel from "../models/session.model";
-import { signJwt, verifyJwt } from "../utils/jwt.utils";
 import { get } from "lodash";
+import config from "config";
+import { FilterQuery, UpdateQuery } from "mongoose";
+import SessionModel, { SessionDocument } from "../models/session.model";
+import { verifyJwt, signJwt } from "../utils/jwt.utils";
 import { findUser } from "./user.service";
 
-export const createSession = async (userId: string, userAgent: string) => {
-  const session = await SessionModel.create({
-    user: userId,
-    userAgent,
-  });
+export async function createSession(userId: string, userAgent: string) {
+  const session = await SessionModel.create({ user: userId, userAgent });
 
   return session.toJSON();
-};
+}
 
-export const findSesions = async (query: FilterQuery<SessionDocument>) => {
-  try {
-    return SessionModel.find(query).lean();
-  } catch (error: any) {
-    logger.error(error);
-  }
-};
+export async function findSessions(query: FilterQuery<SessionDocument>) {
+  return SessionModel.find(query).lean();
+}
 
-export const updateSession = async (
+export async function updateSession(
   query: FilterQuery<SessionDocument>,
   update: UpdateQuery<SessionDocument>
-) => {
-  try {
-    return SessionModel.updateOne(query, update);
-  } catch (error: any) {
-    logger.error(error);
-  }
-};
+) {
+  return SessionModel.updateOne(query, update);
+}
 
-export const reIssueAccessToken = async ({
+export async function reIssueAccessToken({
   refreshToken,
 }: {
   refreshToken: string;
-}) => {
-  const { decoded } = await verifyJwt(refreshToken, "refreshTokenPublicKey");
+}) {
+  const { decoded } = verifyJwt(refreshToken);
 
   if (!decoded || !get(decoded, "session")) return false;
 
@@ -49,16 +36,13 @@ export const reIssueAccessToken = async ({
   if (!session || !session.valid) return false;
 
   const user = await findUser({ _id: session.user });
+
   if (!user) return false;
 
-  // create an access token
   const accessToken = signJwt(
     { ...user, session: session._id },
-    "accessTokenPrivateKey",
-    {
-      expiresIn: config.get<string>("accessTokenTTL"),
-    }
+    { expiresIn: config.get("accessTokenTtl") } // 15 minutes
   );
 
   return accessToken;
-};
+}

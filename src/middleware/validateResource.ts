@@ -1,18 +1,18 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AnyZodObject } from "zod";
 
 const validate =
   (schema: AnyZodObject) =>
-  async (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({
         body: req.body,
-        params: req.params,
         query: req.query,
+        params: req.params,
       });
       next();
-    } catch (error: any) {
-      return res.status(400).send(error.errors);
+    } catch (e: any) {
+      return res.status(400).send(e.errors);
     }
   };
 

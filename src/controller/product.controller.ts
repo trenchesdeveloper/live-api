@@ -1,103 +1,86 @@
-import {
-  findProduct,
-  updateProduct,
-  deleteProduct,
-  createProduct,
-} from "./../service/product.service";
 import { Request, Response } from "express";
 import {
   CreateProductInput,
   UpdateProductInput,
 } from "../schema/product.schema";
-import logger from "../utils/logger";
+import {
+  createProduct,
+  deleteProduct,
+  findAndUpdateProduct,
+  findProduct,
+} from "../service/product.service";
 
-export const createProductHandler = async (
+export async function createProductHandler(
   req: Request<{}, {}, CreateProductInput["body"]>,
   res: Response
-): Promise<Response> => {
-  try {
-    const userId = res.locals.user._id;
+) {
+  const userId = res.locals.user._id;
 
-    const product = await createProduct({ ...req.body, user: userId });
-    return res.status(201).send(product);
-  } catch (error) {
-    logger.error(error);
-    return res.status(500).send(error);
-  }
-};
+  const body = req.body;
 
-export const getProductHandler = async (
+  const product = await createProduct({ ...body, user: userId });
+
+  return res.send(product);
+}
+
+export async function updateProductHandler(
   req: Request<UpdateProductInput["params"]>,
   res: Response
-): Promise<Response> => {
-  try {
-    const userId = res.locals.user._id;
-    const productId = req.params.productId;
-    const product = await findProduct({ productId });
+) {
+  const userId = res.locals.user._id;
 
-    if (!product) {
-      res.sendStatus(404);
-    }
+  const productId = req.params.productId;
+  const update = req.body;
 
-    return res.status(200).send(product);
-  } catch (error) {
-    logger.error(error);
-    return res.status(500).send(error);
+  const product = await findProduct({ productId });
+
+  if (!product) {
+    return res.sendStatus(404);
   }
-};
 
-export const updateProductHandler = async (
-  req: Request<UpdateProductInput["params"], {}, UpdateProductInput["body"]>,
+  if (String(product.user) !== userId) {
+    return res.sendStatus(403);
+  }
+
+  const updatedProduct = await findAndUpdateProduct({ productId }, update, {
+    new: true,
+  });
+
+  return res.send(updatedProduct);
+}
+
+export async function getProductHandler(
+  req: Request<UpdateProductInput["params"]>,
   res: Response
-): Promise<Response> => {
-  try {
-    const userId = res.locals.user._id;
-    const productId = req.params.productId;
-    const product = await findProduct({ productId });
+) {
+  const productId = req.params.productId;
+  const product = await findProduct({ productId });
 
-    if (!product) {
-      res.sendStatus(404);
-    }
-
-    if (String(product?.user) !== userId) {
-      res.sendStatus(403);
-    }
-
-    const updatedProduct = await updateProduct(
-      { _id: product?._id },
-      req.body,
-      {
-        new: true,
-      }
-    );
-    return res.status(200).send(updatedProduct);
-  } catch (error) {
-    logger.error(error);
-    return res.status(500).send(error);
+  if (!product) {
+    return res.sendStatus(404);
   }
-};
 
-export const deleteProductHandler = async (
-  req: Request<UpdateProductInput["params"], {}, {}>,
+  return res.send(product);
+}
+
+export async function deleteProductHandler(
+  req: Request<UpdateProductInput["params"]>,
   res: Response
-): Promise<Response> => {
-  try {
-    const userId = res.locals.user._id;
-    const productId = req.params.productId;
-    const product = await findProduct({ productId });
+) {
+  const userId = res.locals.user._id;
+  const productId = req.params.productId;
 
-    if (!product) {
-      res.sendStatus(404);
-    }
+  const product = await findProduct({ productId });
 
-    if (String(product?.user) !== userId) {
-      res.sendStatus(403);
-    }
-
-    await deleteProduct({ productId });
-    return res.sendStatus(200);
-  } catch (error) {
-    logger.error(error);
-    return res.status(500).send(error);
+  if (!product) {
+    return res.sendStatus(404);
   }
-};
+
+  if (String(product.user) !== userId) {
+    return res.sendStatus(403);
+  }
+
+  await deleteProduct({ productId });
+
+  return res.sendStatus(200);
+}

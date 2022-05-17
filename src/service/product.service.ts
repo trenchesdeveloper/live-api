@@ -1,50 +1,34 @@
 import {
+  DocumentDefinition,
   FilterQuery,
   QueryOptions,
   UpdateQuery,
 } from "mongoose";
-import ProductModel, { ProductDocument, ProductInput } from "../models/product.model";
+import ProductModel, { ProductDocument } from "../models/product.model";
 
-export const createProduct = async (
-  input: ProductInput
-) => {
-  try {
-    return await ProductModel.create(input);
-  } catch (error: any) {
-    throw new Error(error);
-  }
-};
+export async function createProduct(
+  input: DocumentDefinition<
+    Omit<ProductDocument, "createdAt" | "updatedAt" | "productId">
+  >
+) {
+  return ProductModel.create(input);
+}
 
-// find product
-export const findProduct = async (
+export async function findProduct(
   query: FilterQuery<ProductDocument>,
-  queryOptions: QueryOptions = { lean: true }
-) => {
-  try {
-    return ProductModel.findOne(query, {}, queryOptions);
-  } catch (error: any) {
-    throw new Error(error);
-  }
-};
+  options: QueryOptions = { lean: true }
+) {
+  return ProductModel.findOne(query, {}, options);
+}
 
-//find and update product
-export const updateProduct = async (
+export async function findAndUpdateProduct(
   query: FilterQuery<ProductDocument>,
   update: UpdateQuery<ProductDocument>,
   options: QueryOptions
-) => {
-  try {
-    return ProductModel.updateOne(query, update, options);
-  } catch (error: any) {
-    throw new Error(error);
-  }
-};
+) {
+  return ProductModel.findOneAndUpdate(query, update, options);
+}
 
-// delete product
-export const deleteProduct = async (query: FilterQuery<ProductDocument>) => {
-  try {
-    return ProductModel.deleteOne(query);
-  } catch (error: any) {
-    throw new Error(error);
-  }
-};
+export async function deleteProduct(query: FilterQuery<ProductDocument>) {
+  return ProductModel.deleteOne(query);
+}
